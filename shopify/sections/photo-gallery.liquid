@@ -1,0 +1,170 @@
+{% comment %}
+  Photo Gallery Section
+  Add this as a new section in your Shopify theme.
+  Place it on a page template (e.g. page.gallery.liquid).
+  The gallery token is read from the URL query param: ?token=abc123
+{% endcomment %}
+
+<div id="photo-gallery-app" class="gallery-container">
+  <div id="gallery-loading" class="gallery-state">
+    <p>Loading your photos...</p>
+  </div>
+
+  <div id="gallery-error" class="gallery-state" style="display:none;">
+    <h2>Gallery Not Found</h2>
+    <p>This QR code is invalid or the gallery has expired.</p>
+  </div>
+
+  <div id="gallery-content" style="display:none;">
+    <h1 class="gallery-title">Your Photo Gallery</h1>
+    <p id="gallery-meta" class="gallery-meta"></p>
+    <div id="gallery-grid" class="gallery-grid"></div>
+  </div>
+</div>
+
+<style>
+  .gallery-container {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 20px;
+    font-family: inherit;
+  }
+  .gallery-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+  }
+  .gallery-title {
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .gallery-meta {
+    text-align: center;
+    color: #888;
+    margin-bottom: 32px;
+    font-size: 14px;
+  }
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .gallery-photo-card {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f5f5f5;
+    aspect-ratio: 1;
+  }
+  .gallery-photo-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.2s;
+  }
+  .gallery-photo-card:hover img {
+    transform: scale(1.03);
+  }
+  .download-btn {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.65);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .download-btn:hover {
+    background: rgba(0,0,0,0.85);
+  }
+</style>
+
+<script>
+  (function () {
+    const API_BASE = {{ settings.gallery_api_base_url | json }};
+
+    function getTokenFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("token");
+    }
+
+    function formatDate(dateString) {
+      return new Date(dateString).toLocaleDateString(undefined, {
+        year: "numeric", month: "long", day: "numeric"
+      });
+    }
+
+    async function loadGallery(token) {
+      try {
+        const response = await fetch(`${API_BASE}/api/galleries/${token}`);
+        if (!response.ok) throw new Error("Not found");
+        const data = await response.json();
+        renderGallery(data);
+      } catch (e) {
+        document.getElementById("gallery-loading").style.display = "none";
+        document.getElementById("gallery-error").style.display = "block";
+      }
+    }
+
+    function renderGallery(data) {
+      document.getElementById("gallery-loading").style.display = "none";
+      document.getElementById("gallery-content").style.display = "block";
+
+      const parts = [];
+      if (data.customer_name) parts.push(data.customer_name);
+      if (data.event_name) parts.push(data.event_name);
+      if (data.created_at) parts.push("Captured on " + formatDate(data.created_at));
+      document.getElementById("gallery-meta").textContent = parts.join(" · ");
+
+      const grid = document.getElementById("gallery-grid");
+      grid.innerHTML = "";
+
+      data.photos.forEach(function (photo) {
+        const card = document.createElement("div");
+        card.className = "gallery-photo-card";
+
+        const img = document.createElement("img");
+        img.src = photo.url;
+        img.alt = "Gallery photo";
+        img.loading = "lazy";
+
+        const downloadLink = document.createElement("a");
+        downloadLink.className = "download-btn";
+        downloadLink.href = photo.url;
+        downloadLink.download = "";
+        downloadLink.target = "_blank";
+        downloadLink.textContent = "Download";
+
+        card.appendChild(img);
+        card.appendChild(downloadLink);
+        grid.appendChild(card);
+      });
+    }
+
+    const token = getTokenFromURL();
+    if (!token) {
+      document.getElementById("gallery-loading").style.display = "none";
+      document.getElementById("gallery-error").style.display = "block";
+    } else {
+      loadGallery(token);
+    }
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Photo Gallery",
+  "settings": [],
+  "presets": [
+    {
+      "name": "Photo Gallery"
+    }
+  ]
+}
+{% endschema %}

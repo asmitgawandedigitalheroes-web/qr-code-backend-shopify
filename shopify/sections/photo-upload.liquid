@@ -1,0 +1,415 @@
+{% comment %}
+  Photo Upload Section
+  Add to Shopify: Sections → Add new section → "photo-upload"
+  Create page template: page.upload.json
+  Create a Shopify page and assign template: page.upload
+{% endcomment %}
+
+<div class="upload-wrapper">
+
+  {%- comment -%} UPLOAD FORM {%- endcomment -%}
+  <div id="upload-screen">
+    <div class="upload-card">
+      <h1 class="upload-title">Upload Your Photos</h1>
+      <p class="upload-subtitle">Select your photos and get a personal QR gallery instantly.</p>
+
+      <form id="upload-form" novalidate>
+        <div class="field-group">
+          <label class="field-label" for="customer-name">Your Name <span class="optional">(optional)</span></label>
+          <input class="field-input" type="text" id="customer-name" placeholder="e.g. John Doe" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="event-id">Event <span class="optional">(optional)</span></label>
+          <input class="field-input" type="text" id="event-id" placeholder="e.g. Expo 2025" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Photos <span class="required">*</span></label>
+          <div class="drop-zone" id="drop-zone">
+            <input type="file" id="photo-input" accept="image/*" multiple hidden />
+            <div class="drop-zone-inner" id="drop-zone-inner">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <p class="drop-text">Drag & drop photos here or <span class="browse-link">browse</span></p>
+              <p class="drop-hint">JPG, PNG, WEBP up to 20MB each · Max 20 photos</p>
+            </div>
+          </div>
+          <div id="preview-grid" class="preview-grid"></div>
+        </div>
+
+        <div id="upload-error" class="error-msg" style="display:none;"></div>
+
+        <button type="submit" class="submit-btn" id="submit-btn" disabled>
+          <span id="btn-text">Select photos to continue</span>
+          <span id="btn-spinner" style="display:none;">Uploading...</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  {%- comment -%} SUCCESS SCREEN {%- endcomment -%}
+  <div id="success-screen" style="display:none;">
+    <div class="upload-card success-card">
+      <div class="success-icon">✓</div>
+      <h2 class="upload-title">Your Gallery is Ready!</h2>
+      <p class="upload-subtitle">Scan or share this QR code to view your photos anytime.</p>
+
+      <div class="qr-container">
+        <img id="qr-image" src="" alt="Your QR Code" />
+      </div>
+
+      <a id="gallery-link" href="#" target="_blank" class="gallery-link-btn">Open Gallery</a>
+
+      <div class="gallery-url-box">
+        <span id="gallery-url-text"></span>
+        <button class="copy-btn" id="copy-btn">Copy</button>
+      </div>
+
+      <button class="reset-btn" id="reset-btn">Upload More Photos</button>
+    </div>
+  </div>
+
+</div>
+
+<style>
+  .upload-wrapper {
+    max-width: 640px;
+    margin: 60px auto;
+    padding: 0 20px;
+    font-family: inherit;
+  }
+  .upload-card {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 16px;
+    padding: 40px;
+  }
+  .upload-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    text-align: center;
+  }
+  .upload-subtitle {
+    color: #666;
+    text-align: center;
+    margin: 0 0 32px;
+  }
+  .field-group { margin-bottom: 20px; }
+  .field-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .optional { font-weight: 400; color: #999; }
+  .required { color: #e53e3e; }
+  .field-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 15px;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field-input:focus { border-color: #000; }
+
+  /* Drop zone */
+  .drop-zone {
+    border: 2px dashed #ddd;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: #000;
+    background: #f9f9f9;
+  }
+  .drop-zone-inner {
+    padding: 32px 20px;
+    text-align: center;
+    color: #888;
+  }
+  .drop-text { margin: 12px 0 4px; font-size: 15px; }
+  .browse-link { color: #000; font-weight: 600; text-decoration: underline; cursor: pointer; }
+  .drop-hint { font-size: 12px; color: #aaa; margin: 0; }
+
+  /* Preview grid */
+  .preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .preview-item {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f0f0f0;
+  }
+  .preview-item img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .preview-remove {
+    position: absolute;
+    top: 3px; right: 3px;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 20px; height: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    line-height: 20px;
+    text-align: center;
+    padding: 0;
+  }
+
+  /* Submit button */
+  .submit-btn {
+    width: 100%;
+    padding: 14px;
+    background: #000;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: opacity 0.2s;
+  }
+  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .submit-btn:not(:disabled):hover { opacity: 0.85; }
+
+  /* Error */
+  .error-msg {
+    background: #fff5f5;
+    border: 1px solid #feb2b2;
+    color: #c53030;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+
+  /* Success screen */
+  .success-card { text-align: center; }
+  .success-icon {
+    width: 56px; height: 56px;
+    background: #000;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 28px;
+    line-height: 56px;
+    margin: 0 auto 16px;
+  }
+  .qr-container {
+    background: #f9f9f9;
+    border-radius: 12px;
+    padding: 20px;
+    display: inline-block;
+    margin: 20px 0;
+  }
+  .qr-container img { width: 200px; height: 200px; display: block; }
+  .gallery-link-btn {
+    display: inline-block;
+    background: #000;
+    color: #fff;
+    padding: 12px 32px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  .gallery-url-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f5f5f5;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 13px;
+    word-break: break-all;
+    text-align: left;
+  }
+  .copy-btn {
+    flex-shrink: 0;
+    background: #000;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .reset-btn {
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px 24px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-top: 8px;
+    width: 100%;
+  }
+  .reset-btn:hover { border-color: #000; }
+</style>
+
+<script>
+  (function () {
+    const API_BASE = "https://your-backend-url.com"; // ← replace with your backend URL
+
+    let selectedFiles = [];
+
+    const dropZone     = document.getElementById("drop-zone");
+    const photoInput   = document.getElementById("photo-input");
+    const previewGrid  = document.getElementById("preview-grid");
+    const submitBtn    = document.getElementById("submit-btn");
+    const btnText      = document.getElementById("btn-text");
+    const btnSpinner   = document.getElementById("btn-spinner");
+    const errorBox     = document.getElementById("upload-error");
+    const uploadScreen = document.getElementById("upload-screen");
+    const successScreen= document.getElementById("success-screen");
+    const qrImage      = document.getElementById("qr-image");
+    const galleryLink  = document.getElementById("gallery-link");
+    const galleryUrlText = document.getElementById("gallery-url-text");
+    const copyBtn      = document.getElementById("copy-btn");
+    const resetBtn     = document.getElementById("reset-btn");
+
+    // Open file picker on drop zone click
+    dropZone.addEventListener("click", () => photoInput.click());
+
+    // Drag & drop
+    dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("dragover"); });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      addFiles(Array.from(e.dataTransfer.files));
+    });
+
+    photoInput.addEventListener("change", () => addFiles(Array.from(photoInput.files)));
+
+    function addFiles(files) {
+      const imageFiles = files.filter((f) => f.type.startsWith("image/"));
+      const combined = [...selectedFiles, ...imageFiles].slice(0, 20);
+      selectedFiles = combined;
+      renderPreviews();
+    }
+
+    function renderPreviews() {
+      previewGrid.innerHTML = "";
+      selectedFiles.forEach((file, index) => {
+        const item = document.createElement("div");
+        item.className = "preview-item";
+
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(file);
+        img.alt = file.name;
+
+        const removeBtn = document.createElement("button");
+        removeBtn.className = "preview-remove";
+        removeBtn.innerHTML = "×";
+        removeBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          selectedFiles.splice(index, 1);
+          renderPreviews();
+        });
+
+        item.appendChild(img);
+        item.appendChild(removeBtn);
+        previewGrid.appendChild(item);
+      });
+
+      if (selectedFiles.length > 0) {
+        submitBtn.disabled = false;
+        btnText.textContent = `Upload ${selectedFiles.length} photo${selectedFiles.length > 1 ? "s" : ""}`;
+      } else {
+        submitBtn.disabled = true;
+        btnText.textContent = "Select photos to continue";
+      }
+    }
+
+    // Form submit
+    document.getElementById("upload-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (selectedFiles.length === 0) return;
+
+      errorBox.style.display = "none";
+      btnText.style.display = "none";
+      btnSpinner.style.display = "inline";
+      submitBtn.disabled = true;
+
+      const formData = new FormData();
+      const name = document.getElementById("customer-name").value.trim();
+      const eventId = document.getElementById("event-id").value.trim();
+      if (name) formData.append("customer_name", name);
+      if (eventId) formData.append("event_name", eventId);
+      selectedFiles.forEach((file) => formData.append("photos", file));
+
+      try {
+        const response = await fetch(`${API_BASE}/api/galleries`, {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) throw new Error(data.error || "Upload failed");
+
+        // Show success screen
+        qrImage.src = data.qr_code_url;
+        galleryLink.href = data.gallery_url;
+        galleryUrlText.textContent = data.gallery_url;
+        uploadScreen.style.display = "none";
+        successScreen.style.display = "block";
+      } catch (err) {
+        errorBox.textContent = err.message || "Something went wrong. Please try again.";
+        errorBox.style.display = "block";
+        btnText.style.display = "inline";
+        btnSpinner.style.display = "none";
+        submitBtn.disabled = false;
+      }
+    });
+
+    // Copy gallery URL
+    copyBtn.addEventListener("click", () => {
+      navigator.clipboard.writeText(galleryUrlText.textContent);
+      copyBtn.textContent = "Copied!";
+      setTimeout(() => (copyBtn.textContent = "Copy"), 2000);
+    });
+
+    // Reset to upload again
+    resetBtn.addEventListener("click", () => {
+      selectedFiles = [];
+      previewGrid.innerHTML = "";
+      document.getElementById("customer-name").value = "";
+      document.getElementById("event-id").value = "";
+      submitBtn.disabled = true;
+      btnText.textContent = "Select photos to continue";
+      btnText.style.display = "inline";
+      btnSpinner.style.display = "none";
+      successScreen.style.display = "none";
+      uploadScreen.style.display = "block";
+    });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Photo Upload",
+  "settings": [],
+  "presets": [{ "name": "Photo Upload" }]
+}
+{% endschema %}

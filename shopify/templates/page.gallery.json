@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "photo-gallery": {
+      "type": "photo-gallery",
+      "settings": {}
+    }
+  },
+  "order": ["photo-gallery"]
+}

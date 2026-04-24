@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "photo-upload": {
+      "type": "photo-upload",
+      "settings": {}
+    }
+  },
+  "order": ["photo-upload"]
+}
