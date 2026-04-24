@@ -2,6 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const {
   createGallery,
+  getAllGalleries,
   getGallery,
   addPhotos,
   deleteGallery,
@@ -22,6 +23,7 @@ const upload = multer({
 });
 
 router.post("/", upload.array("photos", 20), createGallery);
+router.get("/", getAllGalleries);
 router.get("/:token", getGallery);
 router.post("/:token/photos", upload.array("photos", 20), addPhotos);
 router.delete("/:token", deleteGallery);

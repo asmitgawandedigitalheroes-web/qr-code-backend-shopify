@@ -3,6 +3,19 @@ const supabase = require("../database/db");
 const { uploadPhoto, uploadQRCode, deleteFiles } = require("../services/storageService");
 const { generateQRBuffer } = require("../services/qrService");
 
+// GET /api/galleries
+async function getAllGalleries(req, res) {
+  const { data, error } = await supabase
+    .from("galleries")
+    .select("gallery_token, customer_name, event_name, qr_code_url, created_at, status")
+    .eq("status", "active")
+    .order("created_at", { ascending: false });
+
+  if (error) return res.status(500).json({ error: "Failed to fetch galleries" });
+
+  return res.json({ galleries: data });
+}
+
 // POST /api/galleries
 async function createGallery(req, res) {
   const { session_id, customer_name, event_id, event_name } = req.body;
@@ -180,4 +193,4 @@ async function deleteGallery(req, res) {
   return res.json({ success: true, message: "Gallery deleted" });
 }
 
-module.exports = { createGallery, getGallery, addPhotos, deleteGallery };
+module.exports = { getAllGalleries, createGallery, getGallery, addPhotos, deleteGallery };
