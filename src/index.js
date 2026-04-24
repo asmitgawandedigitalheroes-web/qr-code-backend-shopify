@@ -11,6 +11,7 @@ app.use(express.json());
 
 app.use("/api/galleries", galleriesRouter);
 
+app.get("/", (req, res) => res.send("QR Code Gallery API is live."));
 app.get("/health", (req, res) => res.json({ status: "ok" }));
 
 app.use((err, req, res, next) => {
